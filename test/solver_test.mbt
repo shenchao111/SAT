@@ -108,3 +108,18 @@ test "an unsatisfiable formula has no models" {
   cnf.add_unit(-1)
   assert_eq(@sat.solve_all(cnf).length(), 0)
 }
+
+///|
+test "a pure literal is assigned its only polarity" {
+  // (¬x1 ∨ x2): x1 appears only negatively, so pure-literal elimination sets
+  // x1 = false (the naive branch order would have tried x1 = true first).
+  let cnf = @sat.CNF::new(2)
+  cnf.add_clause([-1, 2])
+  match @sat.solve(cnf) {
+    Some(model) => {
+      assert_eq(model[1], -1)
+      assert_true(@sat.verify(cnf, model))
+    }
+    None => assert_false(true)
+  }
+}

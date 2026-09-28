@@ -69,10 +69,51 @@ fn pick_branch(st : State) -> Int {
   0
 }
 
+/// Assign every pure literal — a variable whose complement appears nowhere in
+/// the still-undecided clauses — to its only polarity. A pure literal can never
+/// exclude a solution, so this is the second classic DPLL simplification,
+/// alongside unit propagation. Repeated to a fixpoint: satisfying a clause can
+/// expose further pure literals.
+fn assign_pure(st : State, clauses : Array[Array[Int]]) -> Unit {
+  let n = st.value.length() - 1
+  let mut progress = true
+  while progress {
+    progress = false
+    let pos = Array::make(n + 1, 0)
+    let neg = Array::make(n + 1, 0)
+    for clause in clauses {
+      if clause_status(st.value, clause) == 0 {
+        for lit in clause {
+          let v = variable(lit)
+          if st.value[v] == 0 {
+            if is_positive(lit) {
+              pos[v] = pos[v] + 1
+            } else {
+              neg[v] = neg[v] + 1
+            }
+          }
+        }
+      }
+    }
+    for v = 1; v <= n; v = v + 1 {
+      if st.value[v] == 0 {
+        if pos[v] > 0 && neg[v] == 0 {
+          assign(st, v)
+          progress = true
+        } else if neg[v] > 0 && pos[v] == 0 {
+          assign(st, -v)
+          progress = true
+        }
+      }
+    }
+  }
+}
+
 fn search(st : State, clauses : Array[Array[Int]]) -> Bool {
   if !propagate(st, clauses) {
     return false
   }
+  assign_pure(st, clauses)
   let v = pick_branch(st)
   if v == 0 {
     return true
