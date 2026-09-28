@@ -1,9 +1,9 @@
 # sat
 
-A dependency-free **SAT solver** for MoonBit: two complete engines (DPLL and
-conflict-driven clause learning), DIMACS CNF parsing and printing, and a
-Sudoku encoder. No dependency beyond the MoonBit core — `moon add`-able and
-compiles to wasm.
+A dependency-free **SAT solver** for MoonBit: two complete engines (DPLL with
+pure-literal elimination, and conflict-driven clause learning), DIMACS CNF
+parsing and printing, model enumeration, and Sudoku and N-queens encoders. No
+dependency beyond the MoonBit core — `moon add`-able and compiles to wasm.
 
 ## A worked example
 
@@ -46,11 +46,19 @@ unsatisfiable.
 
 | Engine | Function | How it works |
 |--------|----------|--------------|
-| DPLL | `solve(cnf)` | unit propagation, decision branching, chronological backtracking |
+| DPLL | `solve(cnf)` | unit propagation, pure-literal elimination, decision branching, chronological backtracking |
 | CDCL | `solve_cdcl(cnf)` | first-UIP clause learning, VSIDS branching, non-chronological backtracking |
 
 `verify(cnf, model)` checks whether a model satisfies every clause, which is
 handy for pinning solver output in tests.
+
+### Enumerating models
+
+`solve_upto(cnf, limit)` returns up to `limit` satisfying assignments (each a
+model array), found by repeatedly solving and blocking the assignment just
+found; `-1` means no limit, and `solve_all(cnf)` returns every model. The cost
+is exponential in the number of free variables, so reserve it for counting or
+for tightly-constrained instances.
 
 ## DIMACS CNF
 
@@ -62,6 +70,10 @@ let cnf = @sat.parse("p cnf 2 2\n1 2 0\n-1 -2 0\n")
 let text = cnf.to_dimacs() // "p cnf 2 2\n1 2 0\n-1 -2 0\n"
 ```
 
+`result(model)` renders a solver verdict in the standard DIMACS solution
+format: an `s SATISFIABLE` / `s UNSATISFIABLE` status line and, when
+satisfiable, a 0-terminated `v` line listing the model literals.
+
 ## Sudoku
 
 A 9×9 Sudoku is encoded as a 729-variable CNF (`v(r,c,d)` = "cell (r,c) holds
@@ -71,12 +83,25 @@ digit d+1"), solved, and decoded back into a grid:
 - `encode(givens)` — `givens` is a 9×9 grid of digits 1–9 with 0 for empty
 - `decode(model)` — turn a model back into a 9×9 grid
 - `solve_puzzle(givens)` — encode, solve and decode in one call
+- `count_solutions(givens)` — the number of distinct solutions
+- `is_unique(givens)` — whether the puzzle has exactly one solution
+
+## N-queens
+
+The N-queens problem is encoded the same way: `v(r,c)` = "a queen sits at row
+r, column c", with exactly one queen per column and at most one per row and
+per diagonal.
+
+- `queen_var(n, r, c)` — the variable index for a queen at (r, c)
+- `encode_queens(n)` — the CNF encoding of an `n`×`n` board
+- `decode_queens(n, model)` — turn a model into the column of each row's queen
+- `solve_queens(n)` — encode, solve and decode in one call (`None` for n=2, 3)
 
 ## Command line
 
 `examples/` ships a runnable demo. `moon run examples` solves a satisfiable
-and an unsatisfiable DIMACS formula with both engines, then solves a Sudoku
-puzzle and prints the grid.
+and an unsatisfiable DIMACS formula with both engines, prints their DIMACS
+results, then solves a Sudoku puzzle and the 4- and 8-queens problems.
 
 ## Use as a library
 
@@ -102,11 +127,12 @@ fn main {
 ## Tests
 
 ```sh
-moon test   # 15 tests, all passing
+moon test   # 29 tests, all passing
 ```
 
-The tests pin the literal algebra, DIMACS round-tripping, satisfiable and
-unsatisfiable instances, the Sudoku encoding, and agreement between the DPLL
+The tests pin the literal algebra, DIMACS round-tripping and result output,
+satisfiable and unsatisfiable instances, model enumeration, pure-literal
+elimination, the Sudoku and N-queens encodings, and agreement between the DPLL
 and CDCL engines.
 
 ## Benchmarks
@@ -116,10 +142,11 @@ magnitude only):
 
 | Routine | Time |
 |---------|------|
-| `dpll_solve` (3-var formula) | ~0.28 µs |
+| `dpll_solve` (3-var formula) | ~0.57 µs |
 | `cdcl_solve` (3-var formula) | ~0.60 µs |
-| `dimacs_parse` | ~6.2 µs |
+| `dimacs_parse` | ~6.7 µs |
 | `sudoku_solve` (9×9) | ~1.6 ms |
+| `nqueens_solve_8` | ~1.6 ms |
 
 ## License
 

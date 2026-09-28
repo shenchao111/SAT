@@ -16,6 +16,7 @@ keywords = [
   "cnf",
   "dimacs",
   "sudoku",
+  "queens",
   "boolean",
 ]
 

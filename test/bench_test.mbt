@@ -40,3 +40,8 @@ test "bench Sudoku solve" (it : @bench.T) {
   ]
   it.bench(name="sudoku_solve", fn() { it.keep(@sat.solve_puzzle(puzzle)) })
 }
+
+///|
+test "bench N-queens solve" (it : @bench.T) {
+  it.bench(name="nqueens_solve_8", fn() { it.keep(@sat.solve_queens(8)) })
+}
