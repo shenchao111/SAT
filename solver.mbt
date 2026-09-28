@@ -104,6 +104,48 @@ pub fn solve(cnf : CNF) -> Array[Int]? {
   }
 }
 
+/// Enumerate up to `limit` satisfying assignments (each a model array, index 0
+/// unused). A `limit` of `-1` means no limit. Models are found by repeatedly
+/// solving and blocking the assignment just found, so the cost is exponential
+/// in the number of free variables — use it for counting or on small,
+/// tightly-constrained instances.
+pub fn solve_upto(cnf : CNF, limit : Int) -> Array[Array[Int]] {
+  // Work on a copy: blocking clauses must not leak into the caller's formula.
+  let formula = CNF::new(cnf.vars())
+  for clause in cnf.clauses() {
+    formula.add_clause(clause)
+  }
+  let n = cnf.vars()
+  let out : Array[Array[Int]] = []
+  while true {
+    match solve(formula) {
+      None => break
+      Some(model) => {
+        out.push(model)
+        if limit >= 0 && out.length() >= limit {
+          break
+        }
+        // Block this exact assignment: falsified only by `model` itself.
+        let block : Array[Int] = []
+        for v = 1; v <= n; v = v + 1 {
+          if model[v] == 1 {
+            block.push(-v)
+          } else {
+            block.push(v)
+          }
+        }
+        formula.add_clause(block)
+      }
+    }
+  }
+  out
+}
+
+/// Enumerate every satisfying assignment of `cnf` (see `solve_upto`).
+pub fn solve_all(cnf : CNF) -> Array[Array[Int]] {
+  solve_upto(cnf, -1)
+}
+
 /// Check whether `model` satisfies every clause of `cnf`.
 pub fn verify(cnf : CNF, model : Array[Int]) -> Bool {
   for clause in cnf.clauses() {
