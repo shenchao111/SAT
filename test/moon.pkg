@@ -1,0 +1,4 @@
+import {
+  "shenchao111/STA" @sat,
+  "moonbitlang/core/bench" @bench,
+} for "test"

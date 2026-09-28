@@ -1,0 +1,123 @@
+///|
+/// A complete DPLL SAT solver: unit propagation, decision branching and
+/// chronological backtracking.
+///
+/// `solve` returns `Some(model)` with a satisfying assignment — `model[v]` is
+/// `1` (true) or `-1` (false), index 0 unused — or `None` when the formula is
+/// unsatisfiable.
+
+/// Mutable search state: the partial assignment and the assignment trail (the
+/// literals set so far, in order).
+priv struct State {
+  value : Array[Int]
+  trail : Array[Int]
+}
+
+fn State::new(num_vars : Int) -> State {
+  let value = Array::make(num_vars + 1, 0)
+  let trail : Array[Int] = []
+  { value, trail }
+}
+
+fn assign(st : State, lit : Int) -> Unit {
+  let v = variable(lit)
+  st.value[v] = if is_positive(lit) { 1 } else { -1 }
+  st.trail.push(lit)
+}
+
+/// Unwind the trail back to `mark`, clearing the undone variables.
+fn undo(st : State, mark : Int) -> Unit {
+  while st.trail.length() > mark {
+    match st.trail.pop() {
+      Some(lit) => st.value[variable(lit)] = 0
+      None => ()
+    }
+  }
+}
+
+/// Unit propagation: keep assigning forced literals until a fixpoint or a
+/// conflict. Returns false on conflict.
+fn propagate(st : State, clauses : Array[Array[Int]]) -> Bool {
+  let mut progress = true
+  while progress {
+    progress = false
+    for clause in clauses {
+      match clause_status(st.value, clause) {
+        -1 => return false
+        0 => {
+          let u = unit_literal(st.value, clause)
+          if u != 0 {
+            assign(st, u)
+            progress = true
+          }
+        }
+        _ => ()
+      }
+    }
+  }
+  true
+}
+
+/// The first unassigned variable, or 0 when everything is assigned.
+fn pick_branch(st : State) -> Int {
+  let n = st.value.length() - 1
+  for v = 1; v <= n; v = v + 1 {
+    if st.value[v] == 0 {
+      return v
+    }
+  }
+  0
+}
+
+fn search(st : State, clauses : Array[Array[Int]]) -> Bool {
+  if !propagate(st, clauses) {
+    return false
+  }
+  let v = pick_branch(st)
+  if v == 0 {
+    return true
+  }
+  let mark = st.trail.length()
+  assign(st, v)
+  if search(st, clauses) {
+    return true
+  }
+  undo(st, mark)
+  assign(st, -v)
+  if search(st, clauses) {
+    return true
+  }
+  undo(st, mark)
+  false
+}
+
+/// Solve a CNF formula. Returns `Some(model)` with a satisfying assignment —
+/// `model[v]` is `1` (true) or `-1` (false), index 0 unused — or `None` if the
+/// formula is unsatisfiable.
+pub fn solve(cnf : CNF) -> Array[Int]? {
+  let st = State::new(cnf.vars())
+  let clauses = cnf.clauses()
+  if search(st, clauses) {
+    Some(st.value)
+  } else {
+    None
+  }
+}
+
+/// Check whether `model` satisfies every clause of `cnf`.
+pub fn verify(cnf : CNF, model : Array[Int]) -> Bool {
+  for clause in cnf.clauses() {
+    let mut satisfied = false
+    for lit in clause {
+      let v = variable(lit)
+      let val = if is_positive(lit) { model[v] } else { -model[v] }
+      if val == 1 {
+        satisfied = true
+      }
+    }
+    if !satisfied {
+      return false
+    }
+  }
+  true
+}

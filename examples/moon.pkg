@@ -1,0 +1,5 @@
+import {
+  "shenchao111/STA" @sat,
+}
+
+pkgtype(kind: "executable")
