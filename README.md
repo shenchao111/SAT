@@ -1,9 +1,10 @@
 # sat
 
 A dependency-free **SAT solver** for MoonBit: two complete engines (DPLL with
-pure-literal elimination, and conflict-driven clause learning), DIMACS CNF
-parsing and printing, model enumeration, and Sudoku and N-queens encoders. No
-dependency beyond the MoonBit core — `moon add`-able and compiles to wasm.
+pure-literal elimination, and conflict-driven clause learning with geometric
+restarts), DIMACS CNF parsing and printing, model enumeration, assumption-based
+solving, and Sudoku, N-queens and graph-coloring encoders. No dependency beyond
+the MoonBit core — `moon add`-able and compiles to wasm.
 
 ## A worked example
 
@@ -47,7 +48,7 @@ unsatisfiable.
 | Engine | Function | How it works |
 |--------|----------|--------------|
 | DPLL | `solve(cnf)` | unit propagation, pure-literal elimination, decision branching, chronological backtracking |
-| CDCL | `solve_cdcl(cnf)` | first-UIP clause learning, VSIDS branching, non-chronological backtracking |
+| CDCL | `solve_cdcl(cnf)` | first-UIP clause learning, VSIDS branching, non-chronological backtracking, geometric restarts |
 
 `verify(cnf, model)` checks whether a model satisfies every clause, which is
 handy for pinning solver output in tests.
@@ -59,6 +60,12 @@ model array), found by repeatedly solving and blocking the assignment just
 found; `-1` means no limit, and `solve_all(cnf)` returns every model. The cost
 is exponential in the number of free variables, so reserve it for counting or
 for tightly-constrained instances.
+
+### Solving under assumptions
+
+`solve_assumptions(cnf, assumptions)` solves the formula with extra literals
+forced true, without mutating the input — the returned model satisfies both the
+formula and every assumption, or is `None` if they conflict.
 
 ## DIMACS CNF
 
@@ -97,11 +104,24 @@ per diagonal.
 - `decode_queens(n, model)` — turn a model into the column of each row's queen
 - `solve_queens(n)` — encode, solve and decode in one call (`None` for n=2, 3)
 
+## Graph coloring
+
+Whether an undirected graph is `k`-colorable is encoded as `v(i,c)` = "vertex i
+has color c", with every vertex taking exactly one color and adjacent vertices
+differing:
+
+- `color_var(k, i, c)` — the variable index for a vertex/color
+- `encode_coloring(n, edges, k)` — the CNF encoding; `edges` lists `(Int, Int)`
+  vertex pairs
+- `decode_coloring(n, k, model)` — turn a model into the color of each vertex
+- `solve_coloring(n, edges, k)` — encode, solve and decode in one call
+
 ## Command line
 
 `examples/` ships a runnable demo. `moon run examples` solves a satisfiable
 and an unsatisfiable DIMACS formula with both engines, prints their DIMACS
-results, then solves a Sudoku puzzle and the 4- and 8-queens problems.
+results, then solves a Sudoku puzzle, the 4- and 8-queens problems, a graph
+coloring, and an assumption-constrained solve.
 
 ## Use as a library
 
@@ -127,12 +147,13 @@ fn main {
 ## Tests
 
 ```sh
-moon test   # 29 tests, all passing
+moon test   # 40 tests, all passing
 ```
 
 The tests pin the literal algebra, DIMACS round-tripping and result output,
-satisfiable and unsatisfiable instances, model enumeration, pure-literal
-elimination, the Sudoku and N-queens encodings, and agreement between the DPLL
+satisfiable and unsatisfiable instances (including the pigeonhole principle),
+model enumeration, pure-literal elimination, assumption-based solving, the
+Sudoku, N-queens and graph-coloring encodings, and agreement between the DPLL
 and CDCL engines.
 
 ## Benchmarks
@@ -147,6 +168,7 @@ magnitude only):
 | `dimacs_parse` | ~6.7 µs |
 | `sudoku_solve` (9×9) | ~1.6 ms |
 | `nqueens_solve_8` | ~1.6 ms |
+| `coloring_c5` (5-cycle, 3 colors) | ~8.2 µs |
 
 ## License
 

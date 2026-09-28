@@ -45,3 +45,9 @@ test "bench Sudoku solve" (it : @bench.T) {
 test "bench N-queens solve" (it : @bench.T) {
   it.bench(name="nqueens_solve_8", fn() { it.keep(@sat.solve_queens(8)) })
 }
+
+///|
+test "bench graph coloring" (it : @bench.T) {
+  let edges : Array[(Int, Int)] = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 0)]
+  it.bench(name="coloring_c5", fn() { it.keep(@sat.solve_coloring(5, edges, 3)) })
+}

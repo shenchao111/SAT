@@ -87,4 +87,25 @@ fn main {
     }
     None => println("no solution")
   }
+
+  println("")
+  println("== Graph coloring ==")
+  let tri : Array[(Int, Int)] = [(0, 1), (1, 2), (2, 0)]
+  match @sat.solve_coloring(3, tri, 3) {
+    Some(colors) => println("triangle 3-coloring: " + colors[0].to_string() + colors[1].to_string() + colors[2].to_string())
+    None => println("no coloring")
+  }
+  match @sat.solve_coloring(3, tri, 2) {
+    None => println("triangle not 2-colorable (as expected)")
+    Some(_) => println("2-colorable (unexpected)")
+  }
+
+  println("")
+  println("== Assumptions ==")
+  let acnf = @sat.CNF::new(2)
+  acnf.add_clause([1, 2])
+  match @sat.solve_assumptions(acnf, [-2]) {
+    Some(model) => println("with x2=false: x1=" + model[1].to_string() + " x2=" + model[2].to_string())
+    None => println("UNSAT")
+  }
 }
