@@ -23,3 +23,16 @@ test "dimacs ignores comments and header count" {
   assert_eq(cnf.vars(), 2)
   assert_eq(cnf.num_clauses(), 2)
 }
+
+///|
+test "dimacs result prints a satisfiable model" {
+  let model = Array::make(3, 0)
+  model[1] = 1
+  model[2] = -1
+  assert_eq(@sat.result(Some(model)), "s SATISFIABLE\nv 1 -2 0\n")
+}
+
+///|
+test "dimacs result prints an unsatisfiable verdict" {
+  assert_eq(@sat.result(None), "s UNSATISFIABLE\n")
+}

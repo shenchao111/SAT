@@ -113,3 +113,20 @@ pub fn CNF::to_dimacs(self : CNF) -> String {
   }
   out
 }
+
+/// Render a solver result in the standard DIMACS solution format: an `s` status
+/// line (`s SATISFIABLE` / `s UNSATISFIABLE`) and, when satisfiable, a 0-
+/// terminated `v` line listing the model literals (positive = true).
+pub fn result(model : Array[Int]?) -> String {
+  match model {
+    None => "s UNSATISFIABLE\n"
+    Some(m) => {
+      let mut out = "s SATISFIABLE\nv "
+      for v = 1; v < m.length(); v = v + 1 {
+        let lit = if m[v] == 1 { v } else { -v }
+        out = out + lit.to_string() + " "
+      }
+      out + "0\n"
+    }
+  }
+}
