@@ -1,7 +1,7 @@
 ///|
 /// A conflict-driven clause-learning (CDCL) SAT solver: unit propagation,
-/// first-UIP clause learning, VSIDS branching and non-chronological
-/// backtracking.
+/// first-UIP clause learning, VSIDS branching, non-chronological backtracking
+/// and geometric restarts.
 ///
 /// `solve_cdcl` returns the same kind of model as `solve` (`model[v]` is `1`
 /// or `-1`, index 0 unused) or `None` when the formula is unsatisfiable.
@@ -16,6 +16,8 @@ priv struct Solver {
   trail : Array[Int]
   trail_lim : Array[Int]
   activity : Array[Double]
+  mut conflicts : Int
+  mut restart_limit : Int
 }
 
 fn Solver::new(cnf : CNF) -> Solver {
@@ -35,6 +37,8 @@ fn Solver::new(cnf : CNF) -> Solver {
     trail,
     trail_lim,
     activity,
+    conflicts: 0,
+    restart_limit: 100,
   }
 }
 
@@ -183,6 +187,16 @@ fn cdcl_search(s : Solver) -> Array[Int]? {
           s.activity[variable(q)] = s.activity[variable(q)] + 1.0
         }
         cdcl_assign(s, learned[0], Some(learned))
+        // Geometric restarts: after enough conflicts, jump back to decision
+        // level 0 and start over, doubling the conflict budget each time.
+        // Learned clauses are retained, so progress is never lost.
+        s.conflicts = s.conflicts + 1
+        if s.conflicts >= s.restart_limit {
+          s.conflicts = 0
+          s.restart_limit = s.restart_limit * 2
+          cdcl_backtrack(s, 0)
+          return cdcl_search(s)
+        }
       }
     }
   }
