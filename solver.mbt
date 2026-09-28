@@ -187,6 +187,21 @@ pub fn solve_all(cnf : CNF) -> Array[Array[Int]] {
   solve_upto(cnf, -1)
 }
 
+/// Solve `cnf` under a set of assumptions — literals forced to true as extra
+/// unit clauses. The input formula is left untouched; the returned model
+/// satisfies both the formula and every assumption, or `None` if the two are
+/// inconsistent.
+pub fn solve_assumptions(cnf : CNF, assumptions : Array[Int]) -> Array[Int]? {
+  let formula = CNF::new(cnf.vars())
+  for clause in cnf.clauses() {
+    formula.add_clause(clause)
+  }
+  for lit in assumptions {
+    formula.add_unit(lit)
+  }
+  solve(formula)
+}
+
 /// Check whether `model` satisfies every clause of `cnf`.
 pub fn verify(cnf : CNF, model : Array[Int]) -> Bool {
   for clause in cnf.clauses() {

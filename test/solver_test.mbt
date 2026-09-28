@@ -123,3 +123,47 @@ test "a pure literal is assigned its only polarity" {
     None => assert_false(true)
   }
 }
+
+///|
+test "assumptions force their literals true" {
+  let cnf = @sat.CNF::new(2)
+  cnf.add_clause([1, 2])
+  match @sat.solve_assumptions(cnf, [1]) {
+    Some(model) => {
+      assert_eq(model[1], 1)
+      assert_true(@sat.verify(cnf, model))
+    }
+    None => assert_false(true)
+  }
+}
+
+///|
+test "contradictory assumptions are unsatisfiable" {
+  let cnf = @sat.CNF::new(1)
+  match @sat.solve_assumptions(cnf, [1, -1]) {
+    None => ()
+    Some(_) => assert_false(true)
+  }
+}
+
+///|
+test "assumptions conflicting with the formula are unsatisfiable" {
+  let cnf = @sat.CNF::new(1)
+  cnf.add_unit(1)
+  match @sat.solve_assumptions(cnf, [-1]) {
+    None => ()
+    Some(_) => assert_false(true)
+  }
+}
+
+///|
+test "assumptions do not mutate the input formula" {
+  let cnf = @sat.CNF::new(1)
+  cnf.add_unit(1)
+  assert_eq(cnf.num_clauses(), 1)
+  match @sat.solve_assumptions(cnf, [-1]) {
+    None => ()
+    Some(_) => assert_false(true)
+  }
+  assert_eq(cnf.num_clauses(), 1)
+}
