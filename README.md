@@ -126,12 +126,12 @@ coloring, and an assumption-constrained solve.
 ## Use as a library
 
 ```sh
-moon add shenchao111/STA
+moon add shenchao111/SAT
 ```
 
 ```moonbit
 // moon.pkg — alias the package however you like:
-import { "shenchao111/STA" @sat }
+import { "shenchao111/SAT" @sat }
 
 fn main {
   let cnf = @sat.CNF::new(2)

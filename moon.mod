@@ -1,4 +1,4 @@
-name = "shenchao111/STA"
+name = "shenchao111/SAT"
 
 version = "0.1.0"
 
@@ -6,7 +6,7 @@ readme = "README.md"
 
 license = "Apache-2.0"
 
-repository = "https://github.com/shenchao111/STA"
+repository = "https://github.com/shenchao111/SAT"
 
 keywords = [
   "sat",

@@ -1,5 +1,5 @@
 import {
-  "shenchao111/STA" @sat,
+  "shenchao111/SAT" @sat,
 }
 
 pkgtype(kind: "executable")
