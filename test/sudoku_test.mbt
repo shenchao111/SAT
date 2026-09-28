@@ -1,6 +1,6 @@
 ///|
-test "sudoku puzzle encodes and solves to a valid grid" {
-  let givens : Array[Array[Int]] = [
+fn wikipedia_puzzle() -> Array[Array[Int]] {
+  [
     [5, 3, 0, 0, 7, 0, 0, 0, 0],
     [6, 0, 0, 1, 9, 5, 0, 0, 0],
     [0, 9, 8, 0, 0, 0, 0, 6, 0],
@@ -11,6 +11,20 @@ test "sudoku puzzle encodes and solves to a valid grid" {
     [0, 0, 0, 4, 1, 9, 0, 0, 5],
     [0, 0, 0, 0, 8, 0, 0, 7, 9],
   ]
+}
+
+///|
+fn empty_puzzle() -> Array[Array[Int]] {
+  let g : Array[Array[Int]] = []
+  for r = 0; r < 9; r = r + 1 {
+    g.push(Array::make(9, 0))
+  }
+  g
+}
+
+///|
+test "sudoku puzzle encodes and solves to a valid grid" {
+  let givens = wikipedia_puzzle()
   let cnf = @sat.encode(givens)
   match @sat.solve(cnf) {
     Some(model) => {
@@ -34,4 +48,16 @@ test "sudoku cell variable indexing is 1-based and distinct" {
   assert_eq(@sat.cell_var(0, 0, 1), 2)
   assert_eq(@sat.cell_var(0, 1, 0), 10)
   assert_eq(@sat.cell_var(8, 8, 8), 729)
+}
+
+///|
+test "a proper puzzle has a unique solution" {
+  let givens = wikipedia_puzzle()
+  assert_true(@sat.is_unique(givens))
+  assert_eq(@sat.count_solutions(givens), 1)
+}
+
+///|
+test "an empty board has many solutions" {
+  assert_false(@sat.is_unique(empty_puzzle()))
 }

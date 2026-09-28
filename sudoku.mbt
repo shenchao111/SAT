@@ -116,3 +116,15 @@ pub fn solve_puzzle(givens : Array[Array[Int]]) -> Array[Array[Int]]? {
     None => None
   }
 }
+
+/// Count the distinct solutions to a puzzle (see `encode`). The cost is
+/// exponential in the number of free cells; prefer `is_unique` when you only
+/// need to know whether a puzzle has a single solution.
+pub fn count_solutions(givens : Array[Array[Int]]) -> Int {
+  solve_all(encode(givens)).length()
+}
+
+/// Whether a puzzle has exactly one solution.
+pub fn is_unique(givens : Array[Array[Int]]) -> Bool {
+  solve_upto(encode(givens), 2).length() == 1
+}
